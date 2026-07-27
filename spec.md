@@ -44,6 +44,9 @@ Everything that crosses a port is a **Signal**, carrying:
   your own acts. This single field is what separates exafference from reafference (§7),
   and it is what decides whether a signal can reframe a turn (§9) or interrupt one (§10).
 - `source` — the port it came through,
+- `drive` — for a signal from the world, which kind of turn its source opens (§9). A
+  self-caused signal carries none, and that absence is why reafference reframes nothing
+  and interrupts nothing — it is the middle of a thought, not news.
 - `predicted` — for a self-caused signal, the **efference copy**: what the acting mind
   predicted the result would be, so the return can be judged against it (see §8).
 

@@ -25,7 +25,7 @@ flowchart TB
         end
         AFF(["<b>Afference</b><br/>the one stream<br/>counts what may interrupt<br/>coalesces the beat"])
         subgraph ACTS["actuators · efferent"]
-            DO["<b>DefaultOut</b><br/>the voice · native"]
+            DO["<b>DefaultOut</b><br/>the voice · native<br/><i>no reafference</i>"]
             TO["<b>TelegramOut</b><br/>→ TelegramTool"]
             BO["<b>BashOut</b><br/>→ BashTool"]
         end
@@ -55,6 +55,8 @@ flowchart TB
 
 Thick arrows are signals in flight. **Dotted arrows are reafference** — an act's result coming home through the sensor paired to that actuator. That is why a `BashOut` result arrives tagged `BashIn[int]` (internal — proprioception, feeling your own hand) while a `TelegramOut` result arrives tagged `TelegramIn[ext]` (external — hearing your own words land). One mechanism, two sides, and the difference is what makes the *-ceptions* emergent instead of built.
 
+`DefaultOut` has no dotted arrow, and it is worth being precise about why: it *does* name `DefaultIn` as its pair, but it is **native** rather than willed, so its acts carry no `ref`, and `Body._run` returns nothing before the pair is ever consulted. Plain text reaches no one, so a fully-predicted act is cancelled as perception. The absent return path is not a missing wire; it is the wire declining to fire.
+
 Notice what the diagram does **not** contain: no scheduler, no retrieval engine, no memory subsystem, no interrupt channel. Each of those is either a consequence of the wiring or a file the agent tends with its own hands.
 
 ---
@@ -77,7 +79,7 @@ Notice what the diagram does **not** contain: no scheduler, no retrieval engine,
 
 | | |
 |---|---|
-| `Sensor` | An afferent port. May face the world (declares a `drive`, pushes into the stream), may be purely a return path (`drive` unset, only ever stamps results), or both — `TelegramIn` is both. Hooks: `status()` for liveness, `perceived(scene)` to modulate on what arrived, `resume(at)` to be told at wake when the life was last active. |
+| `Sensor` | An afferent port, declaring one of three things: `REACTIVE` (faces the world, someone waits — may interrupt), `PROACTIVE` (faces the world, nothing waits — fires in the gaps), or **unset** (a pure return path that only ever stamps results; `signal()` on it asserts). A sensor may be two of these — `TelegramIn` is reactive *and* `TelegramOut`'s return path. Hooks: `status()` for liveness, `perceived(scene)` to modulate on what arrived, `resume(at)` to be told at wake when the life was last active. |
 | `Actuator` | An efferent port. Native, or fronting a `Tool`. Carries `pair` — the sensor its result returns through. Exposed to the mind iff a tool sits behind it. |
 | `Tool` | A capability: `description · schema · run()`. Stateless over immutable config, so one actuator can carry many concurrent acts. |
 | `ToolRegistry` | Dispatch by name, and the specs handed to the model. |
@@ -153,7 +155,11 @@ elif any(s.drive == PROACTIVE for s in opens) and not reafference(scene):
 # otherwise unchanged — you are mid-thought
 ```
 
-Reafference **shields** a live exchange, so the beat cannot hijack a turn already underway. And `origin` gates everything, which is why a return path's `drive` is unreachable rather than merely unset.
+Reafference **shields** a live exchange, so the beat cannot hijack a turn already underway.
+
+**The bypass is a property of the signal, not of the sensor.** `Sensor.reafferent()` stamps `origin="self"` and leaves `drive` unset on the signal it makes, so a result flows home through *any* pair sensor without touching the stance — including through a `REACTIVE` one like `TelegramIn`. The same field gates interruption in `Afference.put`, which counts only `origin == "world" and drive == REACTIVE`. So one field, read in two places, is the entire reason your own hand can neither reframe your turn nor seize it.
+
+Leaving `drive` unset on a *pure* return path buys one more guarantee: `Sensor.signal()` asserts `drive is not None`, so a return path cannot manufacture a world arrival even by mistake.
 
 ### Think — the window
 
@@ -179,6 +185,20 @@ No tokenizer, no per-model context constant — the API is the oracle, so changi
 
 The current unit is never evictable. The count that fit is remembered across wakes, so waking does not linear-search from the top.
 
+### Journal — or discard an empty beat
+
+The new turns are appended to `trace.jsonl` under their unit id, flushed per turn, before any act runs. A continuing episode keeps the *same* id, which is what makes `grep '"unit": N'` return one complete exchange with nothing straddled.
+
+One scene is not journalled. When the model produced **no acts** on a **pure beat** — no reafference, no reactive arrival — and the unit it opened contains nothing but this turn, that unit is popped:
+
+```python
+beat = not reafference(scene) and all(s.drive == PROACTIVE for s in opens(scene))
+if not acts and beat and opened and added == len(self.units[-1]):
+    self.units.pop()                       # a beat that produced nothing is not an episode
+```
+
+All four conditions are load-bearing: the last two are what make it impossible for the pop to reach anything older than the turn just added, and `beat` is what makes it impossible to discard a moment that perceived a person. Without this, a twelve-hour quiet night at `TICK_MAX` deposits two dozen empty units into both the record and the window. The accepted cost: a beat where the model only *thought* and decided to do nothing loses that thinking.
+
 ### Enact
 
 Every act runs concurrently. The model chooses sequencing by the *shape* of what it emits — several calls in one turn run together; one call, its result, then another is sequential. The executor never asks why, and never serializes.
@@ -203,6 +223,16 @@ Results **re-enter together**, though, because the wire format requires every `t
 | the window | computed | the provider | whatever the API accepts |
 
 The asymmetry is deliberate: **the agent reads either layer and writes only `memory.md`.** Recall is an ordinary act through its hands — `grep`, `tail`, a pipe — not a retrieval system it is subject to.
+
+Everything that has to be bounded is bounded by one constant, and each of them answers a different question:
+
+| | | Bounds |
+|---|---|---|
+| `BUFFER` | 150 units | RAM at any lifespan. `_trim` drops from the front, but `drop = min(len - BUFFER, win)` — never into the live view, so the view wins over the bound |
+| `FIT_MARGIN` | 2 units | how far above the remembered fit a wake loads, so it probes rather than assumes |
+| `OUT_CAP` | 8000 bytes | one act's result, so a single command can never blow the window and strand the current unit |
+| `TICK_MIN` / `TICK_MAX` | 5s → 1800s | the beat's backoff. Free, because the loop blocks on the queue rather than on a sleep |
+| `WATCHDOG` | 3600s | the backstop on `perceive`, so a body whose every sensor died does not block forever |
 
 Both layers are stamped UTC, which is what makes the join work:
 
