@@ -302,7 +302,7 @@ class AnthropicProvider(Provider):
     def _render(self, scene, notes=()):
         """The user turn is where ALL harness prose lives — the [source · time] tags, the
         predicted/actual framing, the synthetic tool_results, and any note the harness owes the agent
-        about the last turn. Ordering matches quark's: results first, then the note."""
+        about the last turn. Results come first, then the note."""
         t0, out = now(), []
         for s in scene:                                     # reafference first — pairs with prior acts
             if s.ref is not None:

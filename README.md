@@ -99,15 +99,16 @@ Known rough edges — deliberate, not unnoticed:
 - **Memory records claims without provenance.** Something it read on the web and something it verified itself read alike six months later.
 - **A person's standing instruction has no home in the standing self.** It lives in the scrolling conversation or in memory, so the proactive drive can out-authorize it.
 
-## Lineage
+## Documentation
 
-`spec.md` came first; the implementation was arrived at over many runs. The full research lineage — notebooks and intermediate designs — is preserved on the `research-lineage` branch of [precog-bak](https://github.com/averagejoeslab/precog-bak).
+| | |
+|---|---|
+| [`spec.md`](spec.md) | the model — what a self is, and why this constitutes one |
+| [`ARCHITECTURE.md`](ARCHITECTURE.md) | the machine — components, dataflow diagrams, persistence, invariants |
+| [`CONTRIBUTING.md`](CONTRIBUTING.md) | how to add a sensor, an actuator, a provider, a drive |
+| [`CLAUDE.md`](CLAUDE.md) | orientation for coding agents |
 
-Context management combines two borrowed ideas: whole-unit eviction from [nanoagent](https://github.com/averagejoeslab/nanoagent), and a lazy *"prompt is too long"* trigger rather than proactive token budgeting. The self-model prose style and the bash-managed memory discipline come from its sibling project, quark.
-
-## Contributing
-
-Adding a sense or a reach is meant to be one file and one line. [CONTRIBUTING.md](CONTRIBUTING.md) has the architecture, the dataflow, the extension recipes, and the invariants that must not break.
+Adding a sense or a reach is meant to be one class and one line.
 
 ## License
 

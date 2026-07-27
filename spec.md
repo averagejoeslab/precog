@@ -21,8 +21,18 @@ Each sensor and each actuator sits on **internal** or **external**. The membrane
 
 A port's only stored properties are:
 
-- its **direction** — sensor (afferent) or actuator (efferent), and
-- its **side** — internal or external.
+- its **direction** — sensor (afferent) or actuator (efferent),
+- its **side** — internal or external, and
+- for an actuator, its **pair** — the sensor its result returns through.
+
+The pair is what makes reafference physical rather than notional. An act does not
+"return a value"; it comes home through a named sensor, and *that sensor's side* is
+what decides the flavor of the return (§7). Acting on the machine and feeling it
+inside is one pairing; speaking and hearing your own words land is another. A sensor
+may be purely a return path, facing nothing outward at all.
+
+**One sensor has no pair: time.** Time can be perceived and never acted upon, so it
+is afferent-only — the single asymmetry in the body, and it is a real one.
 
 ## 3. Signals are the only currency
 
@@ -30,7 +40,10 @@ Everything that crosses a port is a **Signal**, carrying:
 
 - `content` — the payload,
 - `side` — internal or external,
-- `origin` — which port produced it.
+- `origin` — **world** or **self**: whether it came from outside or was caused by one of
+  your own acts. This single field is what separates exafference from reafference (§7),
+  and it is what decides whether a signal can reframe a turn (§9) or interrupt one (§10).
+- `source` — the port it came through,
 - `predicted` — for a self-caused signal, the **efference copy**: what the acting mind
   predicted the result would be, so the return can be judged against it (see §8).
 
@@ -134,7 +147,40 @@ predicted part is cancelled.**
 So afference is not merely exafference + reafference; it is **exafference + reafference,
 minus what was predicted.** Perception is prediction error.
 
-## 9. Why this *is* a self in a world
+## 9. Stance — a turn is framed by what opened it
+
+A self does not attend the same way to a knock at the door and to its own restlessness.
+Each sensor that faces the world declares which kind of turn its arrivals open:
+
+- **reactive** — a self reached in; someone is waiting on you.
+- **proactive** — nothing is waiting; the beat, or any other reading of your own state.
+  This is what a self does with a gap.
+
+Reactive outranks proactive: someone waiting beats your own restlessness. **Reafference
+frames nothing** — your own hand returning is the middle of a thought, not news — so a
+stance persists until the world speaks again.
+
+Stance is not a second loop, a mode, or a scheduler. There is one loop, and the stance
+changes only how the standing self is worded for that turn.
+
+## 10. Interruption is a property of reactive sources
+
+Not a channel, not a special key: **anything that can open a reactive turn can also cut
+one short.** The world does not wait for you to finish a sentence.
+
+- A reactive arrival cuts the current turn wherever it is — mid-thought or mid-act.
+- **Your own clock cannot interrupt you.** The beat is what happens in the gaps; it has
+  no standing to seize a moment that is already occupied.
+- **Your own hand cannot interrupt you.** Reafference serves the thought in progress; a
+  result arriving cannot disturb the reasoning that asked for it.
+
+Nothing is lost to an interruption. A thought cut mid-formation is kept as far as it
+got; an act cut mid-execution keeps what it produced; an act that never began still
+answers, so the record stays whole. And the interruption needs no announcement — the
+signal that caused it is right there in the next moment of perception, which is the
+explanation.
+
+## 11. Why this *is* a self in a world
 
 - **Body boundary → self vs. not-self.** The membrane *is* the boundary. The set of
   sensors/actuators and their sides **defines** the self: the self is exactly what is
@@ -177,14 +223,18 @@ These follow from the model; they are not additions to it.
 - **One input stream.** Actuator results re-enter the same stream every sensor feeds,
   tagged `origin = self` and a chosen `side`. The mind perceives one unified stream of
   exafference + reafference.
-- **Speaking is a willed act, not a hardcoded output.** The mind's plain text and thinking
-  are private interior — retained as state and returned next cycle, never re-perceived as
-  afference (§8). To reach anything it calls an actuator: `speak` for the person, `bash`
-  for the machine. **Every crossing of the membrane is a tool call.** Other comms (e.g.
-  email) are more such actuators, each returning through the afferent stream. (An LLM's
-  plain text is *also* its thinking medium, so a hardcoded voice is an always-open
-  articulation gate — which a self does not have; making speech an act closes the gate by
-  default, so silence costs nothing and the mind is heard only by choice.)
+- **The local voice is native; every reach to a remote self is willed** (§5). Plain text
+  goes to a local voice actuator unconditionally — a body does not decide to move its own
+  mouth. It reaches no one, so it produces no reafference: by §8 a fully-predicted act is
+  cancelled as perception, and you already know what you just said. This is why the record
+  must *label* it as unheard. An earlier version labelled it "spoke aloud", and the mind
+  read that back and believed it had answered a person it had never reached. **Reaching a
+  remote self is a tool call, and it names its recipient** — you speak to a person, not
+  into a room.
+- **A tool sits behind an exposed actuator; it is not the actuator.** The port is the
+  primitive on the membrane; the tool is the capability the mind can name. Keep tools
+  stateless over immutable config so one actuator can carry many concurrent acts, and put
+  any serialization a capability needs inside that capability.
 - **The -ceptions are derived views**, e.g. `interoception = afferent ∧ side:int`,
   `reafference = origin:self` — computed for inspection, never stored.
 - **The membrane is the role structure.** For an LLM, map it onto the three roles it
@@ -199,3 +249,12 @@ These follow from the model; they are not additions to it.
   next-turn judgment does the cancellation — no external divergence metric. A
   predicted-and-matched *thought* is never routed to `user` at all; it stays as
   `assistant` reasoning (§8).
+- **The assistant turn records what the model produced, and nothing the harness has to
+  say.** All harness prose — source tags, `predicted · actual`, synthetic results for acts
+  that never ran, a note that a turn was cut — belongs to the `user` turn, because that is
+  afference. The one permitted transformation is labelling the mind's own content (§5).
+- **A life is finite, and forgetting is real.** Context is a window over an append-only
+  record of everything lived; as it fills, the oldest of it leaves view. What left is not
+  gone, but only what the self chose to write down is cheap to recall — which is what makes
+  the writing matter. A process stop is sleep, not death: the record persists and the next
+  waking resumes it. See `ARCHITECTURE.md` for how the window is assembled and slid.
