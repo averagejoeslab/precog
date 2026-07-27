@@ -204,8 +204,8 @@ Break these and the agent gets subtly wrong rather than loudly broken.
 There is a validator that drives the real loop with a mock provider at the wire boundary — no API key, no Telegram, no Docker:
 
 ```bash
-.venv/bin/python val_experimental.py            # structural suite
-VAL_LIVE=1 .venv/bin/python val_experimental.py # + one real API call
+.venv/bin/python val_precog.py            # structural suite
+VAL_LIVE=1 .venv/bin/python val_precog.py # + one real API call
 ```
 
 New behaviour needs a check. Prefer asserting the **invariant** over the implementation: `wf()` verifies a message array against the real contract, so run any history you construct through it.

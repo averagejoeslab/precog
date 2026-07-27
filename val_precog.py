@@ -1,4 +1,4 @@
-"""Validate precog_experimental.py with a MOCK provider at the wire boundary (override _call only).
+"""Validate precog.py with a MOCK provider at the wire boundary (override _call only).
 Covers: unit slicing (the atomic slice) · lazy slide on overflow · verbatim view (no rewriting) ·
 push-sensors + coalescing · reactive interruption mid-stream and mid-act · reafference shielding ·
 stance stickiness · parallel same-tool by name · tail-load + heal · empty-beat drop · never-drop-a-
@@ -6,7 +6,7 @@ world-scene · dynamic identity. No real API, telegram, or docker."""
 import sys, os, json, time, tempfile, threading
 from abc import ABC
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import precog_experimental as P
+import precog as P
 
 fails = []
 def ok(n, c):

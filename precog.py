@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""precog_experimental — a self, per spec.md: a body of paired sensors and actuators around one mind.
+"""precog — a self, per spec.md: a body of paired sensors and actuators around one mind.
 
 THE MODEL
   Signals are the only currency, and they circulate:
@@ -33,7 +33,7 @@ THE MODEL
   free; successes are billed — which is why the search is linear and never binary.
 
 RUN
-  python precog_experimental.py     (DEEPSEEK_API_KEY required; TELEGRAM_* to reach a person;
+  python precog.py                  (DEEPSEEK_API_KEY required; TELEGRAM_* to reach a person;
                                      a telegram 'quit' stops the loop)
 """
 import os, sys, re, json, time, datetime, threading, queue, subprocess, urllib.request, shutil, select

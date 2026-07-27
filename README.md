@@ -75,7 +75,7 @@ Everything held is sent; on `prompt is too long` the **oldest unit** is dropped 
 ```bash
 python3 -m venv .venv && .venv/bin/pip install anthropic
 cp .env.example .env          # then fill it in
-.venv/bin/python precog_experimental.py
+.venv/bin/python precog.py
 ```
 
 ```ini
