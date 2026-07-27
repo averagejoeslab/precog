@@ -14,7 +14,9 @@ cp .env.example .env                                          # then fill it in
 .venv/bin/python precog.py
 ```
 
-`~/.precognitive/` is **durable state — a life, not a cache.** Do not wipe it to "reset"; that destroys the agent's memory and its entire past. To develop against a clean slate, point `STATE_DIR` somewhere else or pass `trace_path=None` to `Agent` for an ephemeral run.
+`~/.precognitive/` is **durable state — a life, not a cache.** Do not wipe it to "reset"; that destroys the agent's memory and its entire past.
+
+To develop against a clean slate, construct the `Agent` with `trace_path` pointed at a scratch file, or `trace_path=None` for a fully ephemeral run. **Do not try to reassign `STATE_DIR`** — `MEMORY_PATH` and `TRACE_PATH` are built from it at import, so they go on pointing at the real life while only the container mount moves.
 
 Running it live starts a real agent that will message a real person and run real commands.
 
@@ -163,8 +165,8 @@ Nothing in the framework distinguishes these. They are all one call to `pair.rea
 ### Rules for tools
 
 - **Always include `expect`.** The prediction is what turns a result into something judgeable instead of merely received. Its value is copied onto the act signal and comes back as `predicted · actual`.
-- **Stateless over immutable config.** Everything per-call lives in `inp` and locals. The executor may invoke your tool many times at once and will never serialize you; if you need serialization, hold your own lock (`BashTool` does, around container bring-up).
-- **Cap what you return** (see `OUT_CAP`). One unbounded result can blow the whole window and leave the current unit unable to fit — the only unrecoverable state in the system.
+- **Stateless over immutable config.** Everything per-call lives in `inp` and locals. The executor runs up to 8 acts at once (`max_workers=8`) and will never serialize you; if you need serialization, hold your own lock (`BashTool` does, around container bring-up).
+- **Cap what you return** (see `OUT_CAP` — 8000 *characters*, compared with `len()` on the decoded string). One unbounded result can blow the whole window and leave the current unit unable to fit — the only unrecoverable state in the system.
 - **Name the recipient** if your actuator reaches a person, and on failure say who *is* reachable, so the mind can correct itself rather than concluding it can reach nobody.
 - **Poll `should_stop()`** if you can run for a while, and return whatever you produced before dying. A killed act still owes an answer.
 
@@ -217,10 +219,10 @@ Authored prose may state the *model*. **Anything naming a live part must be a sl
 
 And never tell it something it cannot check. An earlier version showed the agent its own source; it read a config variable, could not find it in the one shell it can reach, and concluded it could message nobody — which was false. Self-knowledge comes from the body-schema, which it can verify by acting.
 
-If you change anything the agent reads about itself, paste the rendered section in the PR:
+If you change anything the agent reads about itself, paste the rendered section in the PR. `build()` requires `DEEPSEEK_API_KEY` to be set even though nothing here calls the API, so pass a dummy:
 
-```python
-.venv/bin/python -c "import precog as P; a=P.build(); \
+```bash
+DEEPSEEK_API_KEY=- .venv/bin/python -c "import precog as P; a=P.build(); \
 print(a.identity.render(a.body.describe(), {'when': P.now().date(), 'window': a.window()}))"
 ```
 

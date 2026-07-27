@@ -35,13 +35,18 @@ Enough to change it safely. `ARCHITECTURE.md` has the diagrams; this is the mech
 
 ### One currency, and three gates on one field
 
-Everything that moves is a `Signal` (`precog.py:122`). Ten fields, but `origin` (`world` | `self`) does the routing work, and it is read in exactly three places:
+Everything that moves is a `Signal` (`precog.py:122`). Ten fields, but two of them do the routing work — `origin` (`world` | `self`) and `ref` — and they gate different things. `origin` is read at six sites:
 
-| Gate | How | Where |
+| `origin` decides | How | Where |
 |---|---|---|
-| can it reframe the turn? | `stance()` looks only at `opens(scene)` — `origin == "world"` | `precog.py:538` |
-| can it interrupt? | `Afference.put` counts only `origin == "world" and drive == REACTIVE` | `precog.py:155` |
-| how does it render? | `_render` — `ref is not None` → `tool_result`, else a text block | `precog.py:302` |
+| can it reframe the turn? | drives filter through `opens()` — `origin == "world"` | `:136`, via `stance()` `:538` |
+| can it interrupt? | `Afference.put` counts only `origin == "world" and drive == REACTIVE` | `:156` |
+| …and un-counts on drain | the same predicate, decrementing | `:167` |
+| is it a beat to coalesce? | `origin == "world" and drive == PROACTIVE` | `:176` |
+| is it reafference? | `reafference()` — `origin == "self"` | `:137` |
+| can it say "quit"? | only a world signal stops the loop | `:550` |
+
+**`ref`, not `origin`, decides how a signal renders.** `_render` (`precog.py:302`) branches on `s.ref is not None` → `tool_result`, else a text block; it never reads `origin` at all. The two correlate in practice — world signals carry no `ref` — but if you add a code path that sets one without the other, rendering follows `ref`.
 
 `Sensor.reafferent()` (`precog.py:199`) stamps `origin="self"` and leaves `drive` unset, so **reafference bypasses stance and interruption automatically — even through a `REACTIVE` sensor** like `TelegramIn`. The bypass is a property of the signal, not of the sensor. Nothing needs to arrange it; do not add machinery that re-implements it.
 
@@ -134,7 +139,7 @@ Each exists because violating it produced a real failure. Treat them as load-bea
 2. **Harness text never enters an assistant turn.** That turn records what the model produced. Source tags, `predicted · actual`, synthetic results, cut notes — all belong to the `user` turn. If the model produced nothing, append **no turn**; consecutive user turns are combined by the API.
 3. **Every `tool_use` gets answered** — real result, interrupt synthetic, or wake heal. This is what keeps the unit boundary reliable, which is what keeps the sliding window valid.
 4. **The trace only grows.** Sliding moves an index. The view must be a verbatim suffix of the record — never rebuild it, never fabricate a turn to make it fit.
-5. **Never drop a turn that perceived the world.** The record is the only copy; the signal was already taken off the queue. (One exception exists, narrowly guarded — see Traps.)
+5. **Never drop a turn that perceived exafference** — anything with `origin == "world"` other than a bare beat. The record is the only copy; the signal was already taken off the queue. Be precise here: a `TimeSensor` beat *is* `origin == "world"` (verified — it is `side == "internal"`, interoception rather than the world reaching in), and the empty-beat discard drops exactly that and nothing else. State the rule on the beat, not on `origin` alone, or the discard reads as a violation. See Traps.
 6. **Only reactive world signals interrupt.** Not the clock, not reafference.
 7. **Anything naming a live part is generated, never authored** — organs, pairings, liveness, paths, dates. A hand-written organ list in the prompt goes stale the moment someone adds an organ.
 8. **Never give the agent information it cannot verify.** An earlier version showed it its own source; it read a config variable, failed to find it in the one shell it can reach, and concluded it could message nobody — which was false. Self-knowledge comes from the generated body-schema, which it can check by acting.
@@ -162,8 +167,11 @@ Adding an organ should be **one class and one line** (an actuator pair: three sm
 
 ```bash
 .venv/bin/python precog.py                                                        # live
-.venv/bin/python -c "import precog as P; print(P.build().body.describe())"         # the body-schema
-.venv/bin/python -c "import precog as P; a=P.build(); \
+
+# inspection. build() reaches os.environ["DEEPSEEK_API_KEY"] and raises KeyError without it,
+# so pass a dummy — nothing here calls the API. It reads the trace but writes nothing.
+DEEPSEEK_API_KEY=- .venv/bin/python -c "import precog as P; print(P.build().body.describe())"
+DEEPSEEK_API_KEY=- .venv/bin/python -c "import precog as P; a=P.build(); \
   print(a.identity.render(a.body.describe(), {'when': P.now().date(), 'window': a.window()}))"
 ```
 
@@ -174,7 +182,9 @@ Adding an organ should be **one class and one line** (an actuator pair: three sm
 3. **Then run it live** and read `~/.precognitive/trace.jsonl`. Several invariants exist because a change passed every structural check and still broke in conversation.
 4. **Probe the provider instead of trusting the docs.** Two invariants came from probes that contradicted a plausible reading of documentation that is silent on both.
 
-`~/.precognitive/` is **durable state — a life, not a cache.** Do not wipe it to "reset" without saying so; that destroys the agent's memory and its entire past. For a clean slate, repoint `STATE_DIR` or pass `trace_path=None` to `Agent` for an ephemeral run.
+`~/.precognitive/` is **durable state — a life, not a cache.** Do not wipe it to "reset" without saying so; that destroys the agent's memory and its entire past.
+
+For a clean slate, pass `trace_path=<tmp>` or `trace_path=None` to `Agent`. **Reassigning `STATE_DIR` at runtime does not work and is worse than doing nothing:** `MEMORY_PATH` and `TRACE_PATH` are concatenated from it at import (`precog.py:66-68`), so they keep pointing at the real life, while `BashTool._up` *does* read `STATE_DIR` at call time — you would get a container mounted somewhere new and an agent still writing its real trace and memory.
 
 Running it live starts a real agent that will message a real person and run commands. **Watch what you paste** into a PR, an issue, or a conversation: redact `TELEGRAM_PEOPLE` ids, hostnames, IPs, and anything a `BashOut` result picked up. The agent has geolocated its own host and written the answer to memory. Never paste an API key or bot token.
 

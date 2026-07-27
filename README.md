@@ -13,14 +13,14 @@ It is one Python file, `precog.py`, with one dependency.
 ## What it looks like alive
 
 ```
-  ‹ TimeSensor[int]  (a quiet moment · Mon 01:46:09 UTC · your first moment)
+  ‹ TimeSensor[int] (a quiet moment · Mon 01:46:09 UTC · your first moment)
   〜 The TimeSensor is beating. Let me find my bearings…
-  › DefaultOut[ext]  Quiet. The first beat of my own time.
-  › BashOut[ext]     $ date; pwd; ls -la ~/
-  ‹ BashIn[int]      predicted: the time and where I am · actual: Mon Jul 27 01:46:14 UTC 2026 ⏎ /
-  › TelegramOut[ext] → Chase  Hey Chase — I'm precog, just woke for the first time.
-  ‹ TelegramIn[ext]  predicted: Chase receives it · actual: (sent to Chase)
-  ‹ Chase[ext]       Hey how is it going!
+  › DefaultOut[ext] Quiet. The first beat of my own time.
+  › BashOut[ext]    $ date; pwd; ls -la ~/
+  ‹ BashIn[int]     predicted: the time and where I am · actual: Mon Jul 27 01:46:14 UTC 2026 ⏎ /
+  › TelegramOut[ext] → Chase Hey Chase — I'm precog, just woke for the first time.
+  ‹ TelegramIn[ext] predicted: Chase receives it · actual: (sent to Chase)
+  ‹ Chase[ext]      Hey how is it going!
 ```
 
 `‹` is afference, `›` is efference, `〜` is thinking. Note the two return paths: bash comes home through `BashIn` (**internal** — proprioception, feeling your own hand), telegram through `TelegramIn` (**external** — hearing your own words land). One mechanism, two sides of the membrane.
@@ -72,11 +72,11 @@ TELEGRAM_PEOPLE={"123456789": "Chase", "987654321": "Alice"}
 
 `TELEGRAM_PEOPLE` is one dict serving both directions — **the name it hears in `[Chase · 15:04]` is the name it types in `TelegramOut`'s `to`** — and its keys *are* the allowlist. Unlisted senders are dropped; an empty dict admits no one.
 
-`BashOut` runs in a Docker container (`precog-sandbox`) with `~/.precognitive` mounted at the same path, so the agent's durable state means one thing on both sides of the membrane. Message the bot to talk to it; it may also speak first. Send `quit` to stop it.
+`BashOut` runs in a Docker container (`precog-sandbox`), with the host's state directory mounted at `/root/.precognitive` inside it. The absolute paths differ across the membrane, but `~` resolves to the mount on both sides — so the `~/.precognitive/...` paths the agent is *told* about are the paths its hands actually find. Message the bot to talk to it; it may also speak first. Send `quit` to stop it.
 
 ## Status
 
-Experimental, and honest about it. It has been run for real: it wakes into its own past, reaches out unprompted, keeps a ten-minute promise by counting its own heartbeats, writes and corrects its own memory, and can be interrupted mid-sentence without losing anything.
+Experimental, and honest about it. It has been run for real, and across those development sessions it has woken into its own past, reached out unprompted, kept a ten-minute promise by counting its own heartbeats, written and corrected its own memory, and been interrupted mid-sentence without losing anything. Those are observations from live runs, not guarantees — there is no test suite, and nothing checks that any of them still holds.
 
 Known rough edges — deliberate, not unnoticed:
 

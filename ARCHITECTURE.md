@@ -147,13 +147,24 @@ The beat backs off **5s → 30min** as quiet holds. That costs nothing, because 
 
 ### Stance
 
+Stance is not hardcoded — it is the ordered drive list, and the first match wins:
+
 ```python
-opens = [s for s in scene if s.origin == "world"]      # only world arrivals reframe
-if   any(s.drive == REACTIVE  for s in opens):  framing = REACTIVE     # someone waits — wins ties
-elif any(s.drive == PROACTIVE for s in opens) and not reafference(scene):
-                                                framing = PROACTIVE
-# otherwise unchanged — you are mid-thought
+def stance(self, scene):                 # §8, the whole of it
+    for d in self.drives:
+        if d.active(scene): self.framing = d; break
+    return self.framing.text
 ```
+
+If no drive fires, `self.framing` is left as it was — that is what makes a stance persist through a mid-episode turn. The two drives shipped in `build()` supply the actual conditions:
+
+```python
+Drive(REACTIVE,  lambda sc: any(s.drive == REACTIVE  for s in opens(sc)), …)   # someone waits — first, so it wins ties
+Drive(PROACTIVE, lambda sc: any(s.drive == PROACTIVE for s in opens(sc))
+                            and not reafference(sc), …)                        # the gap, and only the gap
+```
+
+Both filter through `opens()` (`origin == "world"`), which is what keeps reafference from reframing anything. Adding a stance means adding a `Drive` to that list — see [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 Reafference **shields** a live exchange, so the beat cannot hijack a turn already underway.
 
@@ -230,7 +241,7 @@ Everything that has to be bounded is bounded by one constant, and each of them a
 |---|---|---|
 | `BUFFER` | 150 units | RAM at any lifespan. `_trim` drops from the front, but `drop = min(len - BUFFER, win)` — never into the live view, so the view wins over the bound |
 | `FIT_MARGIN` | 2 units | how far above the remembered fit a wake loads, so it probes rather than assumes |
-| `OUT_CAP` | 8000 bytes | one act's result, so a single command can never blow the window and strand the current unit |
+| `OUT_CAP` | 8000 **characters** | one act's result, so a single command can never blow the window and strand the current unit. Note the comparison is `len()` on the decoded string, so UTF-8-heavy output can still exceed 8000 *bytes*; the truncation note the agent sees says "bytes" and means characters |
 | `TICK_MIN` / `TICK_MAX` | 5s → 1800s | the beat's backoff. Free, because the loop blocks on the queue rather than on a sleep |
 | `WATCHDOG` | 3600s | the backstop on `perceive`, so a body whose every sensor died does not block forever |
 
@@ -281,7 +292,7 @@ Break these and the agent goes subtly wrong rather than loudly broken.
 2. **Harness text never enters an assistant turn.** That turn records what the *model* produced. If the model produced nothing, append no turn.
 3. **Every `tool_use` is answered** — by a real result, an interrupt synthetic, or a wake heal. This is what keeps the unit boundary reliable.
 4. **The record only grows.** Sliding moves an index; the file is never rewritten, and the view is a verbatim suffix.
-5. **Never drop a turn that perceived the world.** The record is the only copy — the signal was already taken off the queue.
+5. **Never drop a turn that perceived exafference** — any signal with `origin == "world"` *except* a bare beat. The record is the only copy; the signal was already taken off the queue. The one discard is the empty beat above, and it is narrow by construction: no acts, no reafference, every world arrival `PROACTIVE`, and the unit containing nothing but the turn just added. Note that a beat *is* `origin == "world"` (it is `side == "internal"` — interoception, not the world reaching in), so this invariant is stated on the beat, not on `origin` alone.
 6. **Only reactive world signals interrupt.** Not your clock, not your own hand.
 7. **Anything naming a live part is generated, never authored.**
 8. **Never tell the agent something it cannot verify.** An earlier version showed it its own source; it read a config variable, failed to find it in the one shell it could reach, and concluded it could message no one — which was false.
